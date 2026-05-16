@@ -446,16 +446,51 @@ function base64ToBlob(base64, type) {
 // Stats
 
 let statsPeriod = 'month';
+let statsCurrency = 'TWD';
+let _ratesCache = null;
+
+async function fetchRates() {
+  if (_ratesCache) return _ratesCache;
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    const json = await res.json();
+    _ratesCache = json.rates;
+  } catch {
+    _ratesCache = { USD:1, TWD:32.5, EUR:0.93, JPY:155, KRW:1380, CNY:7.25, HKD:7.83, GBP:0.79, CZK:23.5, SGD:1.35 };
+  }
+  return _ratesCache;
+}
+
+function convertAmount(amount, fromCurrency, toCurrency, rates) {
+  if (!rates || fromCurrency === toCurrency) return amount;
+  const from = rates[fromCurrency] || 1;
+  const to = rates[toCurrency] || 1;
+  return amount * (to / from);
+}
+
+function fmtCurrency(amount, currency) {
+  const noDecimals = ['JPY', 'KRW', 'CZK'];
+  return noDecimals.includes(currency)
+    ? Math.round(amount).toLocaleString()
+    : Number(amount.toFixed(2)).toLocaleString();
+}
 
 async function renderStats() {
   document.getElementById('page-title').innerHTML = `${PIKA_IMG} 統計`;
   document.getElementById('topbar-action').style.display = 'none';
   const content = document.getElementById('page-content');
+  const currencies = ['TWD','USD','EUR','JPY','KRW','CNY','HKD','GBP','CZK','SGD'];
   content.innerHTML = `
-    <div class="period-tabs">
-      <button class="period-tab ${statsPeriod === 'day' ? 'active' : ''}" onclick="setStatsPeriod('day')">今日</button>
-      <button class="period-tab ${statsPeriod === 'week' ? 'active' : ''}" onclick="setStatsPeriod('week')">本週</button>
-      <button class="period-tab ${statsPeriod === 'month' ? 'active' : ''}" onclick="setStatsPeriod('month')">本月</button>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+      <div class="period-tabs" style="flex:1;margin-bottom:0">
+        <button class="period-tab ${statsPeriod==='day'?'active':''}" onclick="setStatsPeriod('day')">今日</button>
+        <button class="period-tab ${statsPeriod==='week'?'active':''}" onclick="setStatsPeriod('week')">本週</button>
+        <button class="period-tab ${statsPeriod==='month'?'active':''}" onclick="setStatsPeriod('month')">本月</button>
+      </div>
+      <select id="stats-currency" onchange="setStatsCurrency(this.value)"
+        style="padding:8px 10px;border:2px solid var(--border);border-radius:12px;font-size:14px;font-weight:700;background:#FFFEF5;color:var(--text);outline:none;flex-shrink:0">
+        ${currencies.map(c => `<option value="${c}" ${c===statsCurrency?'selected':''}>${c}</option>`).join('')}
+      </select>
     </div>
     <div id="stats-content"><div class="loading"><div class="spinner"></div>計算中...</div></div>
   `;
@@ -463,8 +498,10 @@ async function renderStats() {
 }
 
 function setStatsPeriod(p) { statsPeriod = p; renderStats(); }
+function setStatsCurrency(c) { statsCurrency = c; loadStats(); }
 
 async function loadStats() {
+  const rates = await fetchRates();
   const now = new Date();
   let from;
   if (statsPeriod === 'day') from = now.toISOString().split('T')[0];
@@ -482,36 +519,39 @@ async function loadStats() {
 
   if (!data) return;
 
-  const total = data.reduce((s, r) => s + Number(r.total_amount), 0);
-  const splitTotal = data.filter(r => r.is_split).reduce((s, r) => s + Number(r.total_amount) / 2, 0);
+  const conv = r => convertAmount(Number(r.total_amount), r.currency || 'TWD', statsCurrency, rates);
+  const total = data.reduce((s, r) => s + conv(r), 0);
+  const splitTotal = data.filter(r => r.is_split).reduce((s, r) => s + conv(r) / 2, 0);
   const splitCount = data.filter(r => r.is_split).length;
-  const personalTotal = data.filter(r => !r.group_id).reduce((s, r) => s + Number(r.total_amount), 0);
-  const groupTotal = data.filter(r => r.group_id).reduce((s, r) => s + Number(r.total_amount), 0);
+  const personalTotal = data.filter(r => !r.group_id).reduce((s, r) => s + conv(r), 0);
+  const groupTotal = data.filter(r => r.group_id).reduce((s, r) => s + conv(r), 0);
   const label = statsPeriod === 'day' ? '今日' : statsPeriod === 'week' ? '本週' : '本月';
+  const sym = statsCurrency;
 
   document.getElementById('stats-content').innerHTML = `
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-label">${label}總花費</div>
-        <div class="stat-value">${total.toLocaleString()}</div>
+        <div class="stat-value">${sym} ${fmtCurrency(total, sym)}</div>
         <div class="stat-sub">${data.length} 筆帳單</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">平分帳單合計</div>
-        <div class="stat-value">${splitTotal.toLocaleString()}</div>
-        <div class="stat-sub">共 ${splitCount} 筆（你付一半）</div>
+        <div class="stat-label">平分合計（你付）</div>
+        <div class="stat-value">${sym} ${fmtCurrency(splitTotal, sym)}</div>
+        <div class="stat-sub">共 ${splitCount} 筆 ÷2</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">個人帳單</div>
-        <div class="stat-value">${personalTotal.toLocaleString()}</div>
+        <div class="stat-value">${sym} ${fmtCurrency(personalTotal, sym)}</div>
         <div class="stat-sub">不含群組</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">群組帳單</div>
-        <div class="stat-value">${groupTotal.toLocaleString()}</div>
+        <div class="stat-value">${sym} ${fmtCurrency(groupTotal, sym)}</div>
         <div class="stat-sub">群組消費</div>
       </div>
     </div>
+    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:4px">⚡ 匯率來源：open.er-api.com（即時）</div>
     ${data.length === 0 ? '<div class="empty-state"><div class="empty-icon">📊</div><p>此時段尚無記錄</p></div>' : ''}
   `;
 }
