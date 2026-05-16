@@ -212,6 +212,7 @@ function showManualEntry() {
 
 async function saveManualReceipt() {
   const errEl = document.getElementById('m-error');
+  const btn = document.querySelector('#modal-content .btn-primary');
   const merchant = document.getElementById('m-merchant').value.trim();
   const date = document.getElementById('m-date').value;
   const time = document.getElementById('m-time').value;
@@ -222,6 +223,8 @@ async function saveManualReceipt() {
   const notes = document.getElementById('m-notes').value.trim();
 
   if (!date || !total) { errEl.textContent = '請填寫日期和金額'; return; }
+
+  if (btn) { btn.disabled = true; btn.textContent = '儲存中...'; }
 
   const { error } = await sb.from('receipts').insert({
     user_id: currentUser.id,
@@ -235,7 +238,11 @@ async function saveManualReceipt() {
     notes: notes || null,
   });
 
-  if (error) { errEl.textContent = error.message; return; }
+  if (error) {
+    errEl.textContent = error.message;
+    if (btn) { btn.disabled = false; btn.textContent = '💾 儲存帳單'; }
+    return;
+  }
   closeModal();
   navigate('receipts');
 }
@@ -562,7 +569,11 @@ async function loadGroupsForSelect() {
 
 async function saveReceipt() {
   const errEl = document.getElementById('save-error');
+  const btn = document.querySelector('#ocr-section .btn-primary') || document.querySelector('.btn-primary[onclick="saveReceipt()"]');
   errEl.textContent = '';
+
+  if (btn) { btn.disabled = true; btn.textContent = '儲存中...'; }
+
   const merchant = document.getElementById('r-merchant').value.trim();
   const date = document.getElementById('r-date').value.trim();
   const time = document.getElementById('r-time').value.trim();
@@ -572,7 +583,11 @@ async function saveReceipt() {
   const groupId = document.getElementById('r-group').value || null;
   const notes = document.getElementById('r-notes').value.trim();
 
-  if (!date || !total) { errEl.textContent = '請填寫日期和金額'; return; }
+  if (!date || !total) {
+    errEl.textContent = '請填寫日期和金額';
+    if (btn) { btn.disabled = false; btn.textContent = '💾 儲存帳單'; }
+    return;
+  }
 
   let imageUrl = null;
   if (uploadedImageBase64) {
@@ -595,7 +610,11 @@ async function saveReceipt() {
     notes: notes || null,
   }).select().single();
 
-  if (error) { errEl.textContent = error.message; return; }
+  if (error) {
+    errEl.textContent = error.message;
+    if (btn) { btn.disabled = false; btn.textContent = '💾 儲存帳單'; }
+    return;
+  }
 
   const items = ocrResult?.items || [];
   if (items.length) {
