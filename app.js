@@ -481,14 +481,15 @@ async function renderStats() {
   const content = document.getElementById('page-content');
   const currencies = ['TWD','USD','EUR','JPY','KRW','CNY','HKD','GBP','CZK','SGD'];
   content.innerHTML = `
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
-      <div class="period-tabs" style="flex:1;margin-bottom:0">
-        <button class="period-tab ${statsPeriod==='day'?'active':''}" onclick="setStatsPeriod('day')">今日</button>
-        <button class="period-tab ${statsPeriod==='week'?'active':''}" onclick="setStatsPeriod('week')">本週</button>
-        <button class="period-tab ${statsPeriod==='month'?'active':''}" onclick="setStatsPeriod('month')">本月</button>
-      </div>
+    <div class="period-tabs" style="margin-bottom:8px">
+      <button class="period-tab ${statsPeriod==='day'?'active':''}" onclick="setStatsPeriod('day')">今日</button>
+      <button class="period-tab ${statsPeriod==='week'?'active':''}" onclick="setStatsPeriod('week')">本週</button>
+      <button class="period-tab ${statsPeriod==='month'?'active':''}" onclick="setStatsPeriod('month')">本月</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:14px">
+      <span style="font-size:12px;font-weight:600;color:var(--muted)">換算幣別</span>
       <select id="stats-currency" onchange="setStatsCurrency(this.value)"
-        style="padding:8px 10px;border:2px solid var(--border);border-radius:12px;font-size:14px;font-weight:700;background:#FFFEF5;color:var(--text);outline:none;flex-shrink:0">
+        style="padding:6px 8px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:700;background:#FFFEF5;color:var(--text);outline:none;width:80px">
         ${currencies.map(c => `<option value="${c}" ${c===statsCurrency?'selected':''}>${c}</option>`).join('')}
       </select>
     </div>
