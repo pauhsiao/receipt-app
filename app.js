@@ -195,13 +195,26 @@ function handleFileSelect(e) { handleFiles(e.target.files); }
 function handleFiles(files) {
   const file = files[0];
   if (!file) return;
-  uploadedMediaType = file.type || 'image/jpeg';
   const reader = new FileReader();
   reader.onload = e => {
-    const base64 = e.target.result.split(',')[1];
-    uploadedImageBase64 = base64;
-    document.getElementById('upload-area').innerHTML = `<img src="${e.target.result}" class="preview-img">`;
-    startOCR(base64, uploadedMediaType);
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1280;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL('image/jpeg', 0.8);
+      uploadedImageBase64 = compressed.split(',')[1];
+      uploadedMediaType = 'image/jpeg';
+      document.getElementById('upload-area').innerHTML = `<img src="${compressed}" class="preview-img">`;
+      startOCR(uploadedImageBase64, 'image/jpeg');
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
