@@ -72,6 +72,9 @@ sb.auth.onAuthStateChange((event, session) => {
   } else {
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
+    closeFabMenu();
+    const fab = document.getElementById('fab-add');
+    if (fab) fab.style.display = 'none';
   }
 });
 
