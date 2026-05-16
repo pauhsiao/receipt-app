@@ -73,8 +73,6 @@ sb.auth.onAuthStateChange((event, session) => {
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
     closeFabMenu();
-    const fab = document.getElementById('fab-add');
-    if (fab) fab.style.display = 'none';
   }
 });
 
@@ -86,8 +84,6 @@ function navigate(page) {
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.page === page);
   });
-  const fab = document.getElementById('fab-add');
-  if (fab) fab.style.display = page === 'receipts' ? 'flex' : 'none';
   const pages = { receipts: renderReceipts, upload: renderUpload, stats: renderStats, groups: renderGroups };
   pages[page]?.();
 }
@@ -95,25 +91,24 @@ function navigate(page) {
 function toggleFabMenu() {
   const menu = document.getElementById('fab-menu');
   const backdrop = document.getElementById('fab-backdrop');
-  const fab = document.getElementById('fab-add');
+  const navAdd = document.getElementById('nav-add');
   const isOpen = menu.style.display !== 'none' && menu.style.display !== '';
   if (isOpen) {
     closeFabMenu();
   } else {
     menu.style.display = 'flex';
     backdrop.style.display = 'block';
-    fab.textContent = '✕';
-    fab.style.transform = 'rotate(45deg)';
+    if (navAdd) { navAdd.textContent = '✕'; navAdd.style.transform = 'rotate(45deg)'; }
   }
 }
 
 function closeFabMenu() {
   const menu = document.getElementById('fab-menu');
   const backdrop = document.getElementById('fab-backdrop');
-  const fab = document.getElementById('fab-add');
+  const navAdd = document.getElementById('nav-add');
   if (menu) menu.style.display = 'none';
   if (backdrop) backdrop.style.display = 'none';
-  if (fab) { fab.textContent = '+'; fab.style.transform = ''; }
+  if (navAdd) { navAdd.textContent = '+'; navAdd.style.transform = ''; }
 }
 
 function fabHandleFile(e) {

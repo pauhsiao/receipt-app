@@ -209,6 +209,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); backgr
 .swipe-card { position: relative; z-index: 1; transition: transform 0.25s ease; background: var(--card); border-radius: 20px; padding: 16px; box-shadow: 0 2px 12px rgba(200,150,0,0.1), 0 1px 4px rgba(0,0,0,0.04); border: 1.5px solid #EED870; }
 .swipe-card.open { transform: translateX(-82px); }
 
+/* Center nav add button */
+.nav-center-btn { flex: 1; display: flex; align-items: center; justify-content: center; border: none; background: none; cursor: pointer; }
+.nav-center-icon { width: 52px; height: 52px; background: linear-gradient(135deg, #FFD700, #FFC000); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 700; color: #1A1200; box-shadow: 0 4px 20px rgba(200,150,0,0.5); margin-top: -18px; border: 3px solid white; transition: transform 0.2s; line-height: 1; }
+
 /* Pikachu welcome banner */
 .pika-banner {
   background: linear-gradient(135deg, #FFE566 0%, #FFD200 100%);
@@ -274,12 +278,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); backgr
     </h2>
     <div class="topbar-actions">
       <button class="icon-btn" id="topbar-action" style="display:none"></button>
-      <div style="position:relative">
-        <button class="icon-btn" id="user-btn" onclick="toggleUserMenu()">👤</button>
-        <div id="user-menu" style="display:none;position:absolute;right:0;top:44px;background:white;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,0.15);border:2px solid var(--border);min-width:130px;z-index:300;overflow:hidden">
-          <button onclick="logout()" style="width:100%;padding:13px 16px;border:none;background:none;color:#dc2626;font-size:14px;font-weight:700;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px">🚪 Log Out</button>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -290,17 +288,20 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); backgr
       <span class="nav-icon">🧾</span>
       <span class="nav-label">帳單</span>
     </button>
-    <button class="nav-item" data-page="upload" onclick="navigate('upload')">
-      <span class="nav-icon">📸</span>
-      <span class="nav-label">拍照</span>
+    <button class="nav-item" data-page="groups" onclick="navigate('groups')">
+      <span class="nav-icon">👥</span>
+      <span class="nav-label">群組</span>
+    </button>
+    <button class="nav-center-btn" onclick="toggleFabMenu()">
+      <span id="nav-add" class="nav-center-icon">+</span>
     </button>
     <button class="nav-item" data-page="stats" onclick="navigate('stats')">
       <span class="nav-icon">📊</span>
       <span class="nav-label">統計</span>
     </button>
-    <button class="nav-item" data-page="groups" onclick="navigate('groups')">
-      <span class="nav-icon">👥</span>
-      <span class="nav-label">群組</span>
+    <button class="nav-item" id="user-btn" onclick="toggleUserMenu()">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">帳號</span>
     </button>
   </nav>
 </div>
@@ -313,23 +314,25 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); backgr
 <div id="fab-backdrop" onclick="closeFabMenu()" style="display:none;position:fixed;inset:0;z-index:88;background:rgba(26,18,0,0.3);backdrop-filter:blur(1px)"></div>
 
 <!-- FAB menu options -->
-<div id="fab-menu" style="display:none;position:fixed;bottom:148px;right:20px;z-index:89;display:flex;flex-direction:column;gap:10px;align-items:flex-end">
-  <div style="display:flex;align-items:center;gap:10px">
-    <span style="background:white;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,0.15);color:#1A1200;white-space:nowrap">手動帳單</span>
-    <button onclick="closeFabMenu();showManualEntry()" style="width:46px;height:46px;border-radius:50%;background:white;border:2px solid var(--border);font-size:20px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center">✏️</button>
+<div id="fab-menu" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:89;flex-direction:row;gap:20px;align-items:flex-end">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+    <button onclick="closeFabMenu();document.getElementById('fab-camera').click()" style="width:52px;height:52px;border-radius:50%;background:var(--primary);border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 14px rgba(200,150,0,0.45);display:flex;align-items:center;justify-content:center">📷</button>
+    <span style="font-size:11px;font-weight:700;color:white;background:rgba(26,18,0,0.65);padding:3px 9px;border-radius:10px;white-space:nowrap">拍照</span>
   </div>
-  <div style="display:flex;align-items:center;gap:10px">
-    <span style="background:white;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,0.15);color:#1A1200;white-space:nowrap">帳單上傳</span>
-    <button onclick="closeFabMenu();document.getElementById('fab-library').click()" style="width:46px;height:46px;border-radius:50%;background:white;border:2px solid var(--border);font-size:20px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center">🖼️</button>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+    <button onclick="closeFabMenu();document.getElementById('fab-library').click()" style="width:52px;height:52px;border-radius:50%;background:white;border:2px solid var(--border);font-size:22px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center">🖼️</button>
+    <span style="font-size:11px;font-weight:700;color:white;background:rgba(26,18,0,0.65);padding:3px 9px;border-radius:10px;white-space:nowrap">上傳</span>
   </div>
-  <div style="display:flex;align-items:center;gap:10px">
-    <span style="background:white;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,0.15);color:#1A1200;white-space:nowrap">帳單拍照</span>
-    <button onclick="closeFabMenu();document.getElementById('fab-camera').click()" style="width:46px;height:46px;border-radius:50%;background:var(--primary);border:none;font-size:20px;cursor:pointer;box-shadow:0 2px 10px rgba(200,150,0,0.3);display:flex;align-items:center;justify-content:center">📷</button>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+    <button onclick="closeFabMenu();showManualEntry()" style="width:52px;height:52px;border-radius:50%;background:white;border:2px solid var(--border);font-size:22px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center">✏️</button>
+    <span style="font-size:11px;font-weight:700;color:white;background:rgba(26,18,0,0.65);padding:3px 9px;border-radius:10px;white-space:nowrap">手動</span>
   </div>
 </div>
 
-<!-- FAB main button -->
-<button id="fab-add" onclick="toggleFabMenu()" style="display:none;position:fixed;bottom:80px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#FFD700,#FFC000);color:#1A1200;font-size:28px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(200,150,0,0.45);z-index:90;align-items:center;justify-content:center;line-height:1;transition:transform 0.2s">+</button>
+<!-- User menu (above bottom nav) -->
+<div id="user-menu" style="display:none;position:fixed;bottom:68px;right:8px;background:white;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,0.15);border:2px solid var(--border);min-width:130px;z-index:300;overflow:hidden">
+  <button onclick="logout()" style="width:100%;padding:13px 16px;border:none;background:none;color:#dc2626;font-size:14px;font-weight:700;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px">🚪 Log Out</button>
+</div>
 
 <!-- Modal -->
 <div id="modal-overlay" class="modal-overlay" style="display:none" onclick="closeModal(event)">
