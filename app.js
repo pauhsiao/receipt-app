@@ -71,8 +71,10 @@ function navigate(page) {
 
 // Receipts
 
+const PIKA_IMG = '<img style="width:28px;height:28px;object-fit:contain;vertical-align:middle" src="https://www.pokemon.com/static-assets/content-assets/cms2/img/pokedex/full/025.png" alt="">';
+
 async function renderReceipts() {
-  document.getElementById('page-title').innerHTML = '<span>🐥</span>帳單';
+  document.getElementById('page-title').innerHTML = `${PIKA_IMG} 帳單`;
   document.getElementById('topbar-action').style.display = 'none';
   const content = document.getElementById('page-content');
   content.innerHTML = '<div class="loading"><div class="spinner"></div>載入中...</div>';
@@ -86,14 +88,14 @@ async function renderReceipts() {
   if (error) { content.innerHTML = `<div class="error">${error.message}</div>`; return; }
   if (!receipts.length) {
     content.innerHTML = `
-      <div class="psyduck-banner">
-        <div class="psyduck-banner-emoji">🐥</div>
-        <div class="psyduck-banner-text">
+      <div class="pika-banner">
+        <img src="https://www.pokemon.com/static-assets/content-assets/cms2/img/pokedex/full/025.png" alt="Pikachu">
+        <div class="pika-banner-text">
           <h3>還沒有帳單！</h3>
-          <p>點下方 📸 拍照開始記帳吧</p>
+          <p>⚡ 點下方 📸 拍照開始記帳吧</p>
         </div>
       </div>
-      <div class="empty-state" style="padding-top:24px">
+      <div class="empty-state" style="padding-top:16px">
         <div class="empty-icon">🧾</div>
         <p>帳單會顯示在這裡</p>
       </div>`;
@@ -188,7 +190,7 @@ async function deleteReceipt(id) {
 // Upload
 
 function renderUpload() {
-  document.getElementById('page-title').innerHTML = '<span>📸</span>拍照記帳';
+  document.getElementById('page-title').innerHTML = `${PIKA_IMG} 拍照記帳`;
   document.getElementById('topbar-action').style.display = 'none';
   uploadedImageBase64 = null;
   ocrResult = null;
@@ -411,7 +413,7 @@ function base64ToBlob(base64, type) {
 let statsPeriod = 'month';
 
 async function renderStats() {
-  document.getElementById('page-title').innerHTML = '<span>📊</span>統計';
+  document.getElementById('page-title').innerHTML = `${PIKA_IMG} 統計`;
   document.getElementById('topbar-action').style.display = 'none';
   const content = document.getElementById('page-content');
   content.innerHTML = `
@@ -482,7 +484,7 @@ async function loadStats() {
 // Groups
 
 async function renderGroups() {
-  document.getElementById('page-title').innerHTML = '<span>👥</span>群組';
+  document.getElementById('page-title').innerHTML = `${PIKA_IMG} 群組`;
   const btn = document.getElementById('topbar-action');
   btn.style.display = 'flex';
   btn.textContent = '➕';
