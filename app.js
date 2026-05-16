@@ -42,7 +42,24 @@ async function register() {
   else { errEl.style.color = 'green'; errEl.textContent = '註冊成功！請確認 Email 後登入'; }
 }
 
+function toggleUserMenu() {
+  const menu = document.getElementById('user-menu');
+  const opening = menu.style.display === 'none';
+  menu.style.display = opening ? 'block' : 'none';
+  if (opening) {
+    setTimeout(() => {
+      document.addEventListener('click', function handler(e) {
+        if (!document.getElementById('user-btn').contains(e.target)) {
+          menu.style.display = 'none';
+          document.removeEventListener('click', handler);
+        }
+      });
+    }, 0);
+  }
+}
+
 async function logout() {
+  document.getElementById('user-menu').style.display = 'none';
   await sb.auth.signOut();
 }
 

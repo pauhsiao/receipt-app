@@ -268,7 +268,12 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); backgr
     </h2>
     <div class="topbar-actions">
       <button class="icon-btn" id="topbar-action" style="display:none"></button>
-      <button class="icon-btn" onclick="logout()" title="登出">👤</button>
+      <div style="position:relative">
+        <button class="icon-btn" id="user-btn" onclick="toggleUserMenu()">👤</button>
+        <div id="user-menu" style="display:none;position:absolute;right:0;top:44px;background:white;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,0.15);border:2px solid var(--border);min-width:130px;z-index:300;overflow:hidden">
+          <button onclick="logout()" style="width:100%;padding:13px 16px;border:none;background:none;color:#dc2626;font-size:14px;font-weight:700;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px">🚪 Log Out</button>
+        </div>
+      </div>
     </div>
   </div>
 
