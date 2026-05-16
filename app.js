@@ -163,8 +163,13 @@ function showManualEntry() {
         <span class="toggle-slider"></span>
       </label>
     </div>
-    <div id="m-split-info" style="display:none;color:#854d0e;font-size:13px;margin-bottom:12px">
-      ÷2 各付 <span id="m-split-amt"></span>
+    <div id="m-split-info" style="display:none;background:#FFF8E1;border:1px solid #FCD34D;border-radius:12px;padding:10px 14px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:600;color:#854d0e">幾人平分</span>
+        <input type="number" id="m-split-ways" value="2" min="2" max="99" style="width:58px;padding:5px 8px;border:2px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;text-align:center">
+        <span style="font-size:13px;color:#854d0e">人</span>
+      </div>
+      <div style="font-size:13px;color:#854d0e">每人付 <span id="m-split-amt" style="font-weight:700"></span></div>
     </div>
     <div class="form-group">
       <label>加入群組（選填）</label>
@@ -184,15 +189,17 @@ function showManualEntry() {
   const totalInput = document.getElementById('m-total');
   const splitInfo = document.getElementById('m-split-info');
   const splitAmt = document.getElementById('m-split-amt');
+  const updateMSplit = () => {
+    const t = parseFloat(totalInput.value) || 0;
+    const ways = parseInt(document.getElementById('m-split-ways')?.value) || 2;
+    splitAmt.textContent = `${document.getElementById('m-currency').value} ${(t / ways).toFixed(2)}`;
+  };
   document.getElementById('m-split').addEventListener('change', e => {
     splitInfo.style.display = e.target.checked ? 'block' : 'none';
-    const t = parseFloat(totalInput.value) || 0;
-    splitAmt.textContent = `${document.getElementById('m-currency').value} ${(t / 2).toFixed(2)}`;
+    updateMSplit();
   });
-  totalInput.addEventListener('input', () => {
-    const t = parseFloat(totalInput.value) || 0;
-    splitAmt.textContent = `${document.getElementById('m-currency').value} ${(t / 2).toFixed(2)}`;
-  });
+  totalInput.addEventListener('input', updateMSplit);
+  splitInfo.addEventListener('input', updateMSplit);
 
   // Load groups
   sb.rpc('get_my_groups').then(({ data }) => {
@@ -214,6 +221,7 @@ async function saveManualReceipt() {
   const currency = document.getElementById('m-currency').value.trim() || 'TWD';
   const total = parseFloat(document.getElementById('m-total').value);
   const isSplit = document.getElementById('m-split').checked;
+  const splitWays = isSplit ? (parseInt(document.getElementById('m-split-ways')?.value) || 2) : null;
   const groupId = document.getElementById('m-group').value || null;
   const notes = document.getElementById('m-notes').value.trim();
 
@@ -230,6 +238,7 @@ async function saveManualReceipt() {
     total_amount: total,
     currency,
     is_split: isSplit,
+    split_ways: splitWays,
     notes: notes || null,
   });
 
@@ -280,7 +289,8 @@ async function renderReceipts() {
 
 function receiptCard(r) {
   const groupName = r.groups?.name;
-  const splitAmt = r.is_split ? (r.total_amount / 2).toFixed(2) : null;
+  const ways = r.split_ways || 2;
+  const splitAmt = r.is_split ? (r.total_amount / ways).toFixed(2) : null;
   return `
   <div class="swipe-wrapper" id="wrap-${r.id}">
     <div class="swipe-delete-bg" onclick="swipeDelete('${r.id}')">🗑 刪除</div>
@@ -296,7 +306,7 @@ function receiptCard(r) {
         </div>
       </div>
       <div class="amount">${r.currency} ${Number(r.total_amount).toLocaleString()}</div>
-      ${splitAmt ? `<div class="amount-small">平分各付 ${r.currency} ${Number(splitAmt).toLocaleString()}</div>` : ''}
+      ${splitAmt ? `<div class="amount-small">÷${ways} 每人付 ${r.currency} ${Number(splitAmt).toLocaleString()}</div>` : ''}
     </div>
   </div>`;
 }
@@ -391,7 +401,8 @@ async function showReceiptDetail(id) {
     .single();
 
   const isOwn = r.user_id === currentUser.id;
-  const splitAmt = r.is_split ? (r.total_amount / 2).toFixed(2) : null;
+  const ways = r.split_ways || 2;
+  const splitAmt = r.is_split ? (r.total_amount / ways).toFixed(2) : null;
   const items = r.receipt_items || [];
 
   showModal(`
@@ -420,12 +431,12 @@ async function showReceiptDetail(id) {
         <span>合計</span>
         <span>${r.currency} ${Number(r.total_amount).toLocaleString()}</span>
       </div>
-      ${splitAmt ? `<div class="split-row"><span>÷2 各付</span><span>${r.currency} ${Number(splitAmt).toLocaleString()}</span></div>` : ''}
+      ${splitAmt ? `<div class="split-row"><span>÷${ways} 每人付</span><span>${r.currency} ${Number(splitAmt).toLocaleString()}</span></div>` : ''}
     </div>` : `
     <div class="total-row" style="border-radius:12px;border:1px solid var(--border)">
       <span>合計</span><span>${r.currency} ${Number(r.total_amount).toLocaleString()}</span>
     </div>
-    ${splitAmt ? `<div class="split-row" style="border-radius:0 0 12px 12px;border:1px solid #fde68a;border-top:none"><span>÷2 各付</span><span>${r.currency} ${Number(splitAmt).toLocaleString()}</span></div>` : ''}`}
+    ${splitAmt ? `<div class="split-row" style="border-radius:0 0 12px 12px;border:1px solid #fde68a;border-top:none"><span>÷${ways} 每人付</span><span>${r.currency} ${Number(splitAmt).toLocaleString()}</span></div>` : ''}`}
     ${r.image_url ? `<img src="${await getImageUrl(r.image_url)}" style="width:100%;border-radius:12px;margin-top:12px">` : ''}
     ${isOwn ? `
     <div class="divider"></div>
@@ -595,8 +606,13 @@ function renderOCRResult(data) {
           <span class="toggle-slider"></span>
         </label>
       </div>
-      <div id="split-info" style="display:none;color:#854d0e;font-size:13px;margin-bottom:12px">
-        ÷2 各付 <span id="split-amt"></span>
+      <div id="split-info" style="display:none;background:#FFF8E1;border:1px solid #FCD34D;border-radius:12px;padding:10px 14px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:13px;font-weight:600;color:#854d0e">幾人平分</span>
+          <input type="number" id="r-split-ways" value="2" min="2" max="99" style="width:58px;padding:5px 8px;border:2px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;text-align:center">
+          <span style="font-size:13px;color:#854d0e">人</span>
+        </div>
+        <div style="font-size:13px;color:#854d0e">每人付 <span id="split-amt" style="font-weight:700"></span></div>
       </div>
     </div>
     <div class="card">
@@ -625,13 +641,15 @@ function renderOCRResult(data) {
   const updateSplit = () => {
     const total = parseFloat(totalInput.value) || 0;
     const currency = document.getElementById('r-currency').value;
-    splitAmt.textContent = `${currency} ${(total / 2).toFixed(2)}`;
+    const ways = parseInt(document.getElementById('r-split-ways')?.value) || 2;
+    splitAmt.textContent = `${currency} ${(total / ways).toFixed(2)}`;
   };
   document.getElementById('r-split').addEventListener('change', e => {
     splitInfo.style.display = e.target.checked ? 'block' : 'none';
     updateSplit();
   });
   totalInput.addEventListener('input', updateSplit);
+  splitInfo.addEventListener('input', updateSplit);
 
   loadGroupsForSelect();
 }
@@ -661,6 +679,7 @@ async function saveReceipt() {
   const currency = document.getElementById('r-currency').value.trim() || 'TWD';
   const total = parseFloat(document.getElementById('r-total').value);
   const isSplit = document.getElementById('r-split').checked;
+  const splitWays = isSplit ? (parseInt(document.getElementById('r-split-ways')?.value) || 2) : null;
   const groupId = document.getElementById('r-group').value || null;
   const notes = document.getElementById('r-notes').value.trim();
 
@@ -688,6 +707,7 @@ async function saveReceipt() {
     total_amount: total,
     currency,
     is_split: isSplit,
+    split_ways: splitWays,
     notes: notes || null,
   }).select().single();
 
@@ -785,18 +805,20 @@ async function loadStats() {
   }
 
   const { data } = await sb.from('receipts')
-    .select('total_amount, currency, is_split, group_id')
+    .select('total_amount, currency, is_split, split_ways, group_id')
     .eq('user_id', currentUser.id)
     .gte('receipt_date', from);
 
   if (!data) return;
 
   const conv = r => convertAmount(Number(r.total_amount), r.currency || 'TWD', statsCurrency, rates);
-  const total = data.reduce((s, r) => s + (r.is_split ? conv(r) / 2 : conv(r)), 0);
-  const splitTotal = data.filter(r => r.is_split).reduce((s, r) => s + conv(r) / 2, 0);
+  const ways = r => r.split_ways || 2;
+  const myShare = r => r.is_split ? conv(r) / ways(r) : conv(r);
+  const total = data.reduce((s, r) => s + myShare(r), 0);
+  const splitTotal = data.filter(r => r.is_split).reduce((s, r) => s + conv(r) / ways(r), 0);
   const splitCount = data.filter(r => r.is_split).length;
-  const personalTotal = data.filter(r => !r.group_id).reduce((s, r) => s + conv(r), 0);
-  const groupTotal = data.filter(r => r.group_id).reduce((s, r) => s + conv(r), 0);
+  const personalTotal = data.filter(r => !r.group_id).reduce((s, r) => s + myShare(r), 0);
+  const groupTotal = data.filter(r => r.group_id).reduce((s, r) => s + myShare(r), 0);
   const label = statsPeriod === 'day' ? '今日' : statsPeriod === 'week' ? '本週' : '本月';
   const sym = statsCurrency;
 
