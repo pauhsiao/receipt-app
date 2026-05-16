@@ -88,7 +88,7 @@ function navigate(page) {
 
 // Receipts
 
-const PIKA_IMG = '<img style="width:28px;height:28px;object-fit:contain;vertical-align:middle" src="https://www.pokemon.com/static-assets/content-assets/cms2/img/pokedex/full/025.png" alt="">';
+const PIKA_IMG = '<img style="width:28px;height:28px;object-fit:contain;vertical-align:middle" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="" onerror="this.style.display=\'none\'">';
 
 async function renderReceipts() {
   document.getElementById('page-title').innerHTML = `${PIKA_IMG} 帳單`;
@@ -106,7 +106,7 @@ async function renderReceipts() {
   if (!receipts.length) {
     content.innerHTML = `
       <div class="pika-banner">
-        <img src="https://www.pokemon.com/static-assets/content-assets/cms2/img/pokedex/full/025.png" alt="Pikachu">
+        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu">
         <div class="pika-banner-text">
           <h3>還沒有帳單！</h3>
           <p>⚡ 點下方 📸 拍照開始記帳吧</p>
