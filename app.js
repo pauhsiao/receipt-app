@@ -175,12 +175,13 @@ function renderUpload() {
   uploadedImageBase64 = null;
   ocrResult = null;
   document.getElementById('page-content').innerHTML = `
-    <div class="upload-area" onclick="document.getElementById('file-input').click()" id="upload-area">
-      <div class="upload-icon">📷</div>
-      <div class="upload-text">點擊拍照或選擇照片</div>
-      <div class="upload-text" style="font-size:12px;margin-top:4px">支援 8 種語言帳單識別</div>
+    <div style="display:flex;gap:12px;margin-bottom:16px">
+      <button class="btn btn-primary" style="flex:1" onclick="document.getElementById('file-camera').click()">📷 拍照</button>
+      <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('file-library').click()">🖼️ 相簿</button>
     </div>
-    <input type="file" id="file-input" accept="image/*" capture="environment" style="display:none" onchange="handleFileSelect(event)">
+    <input type="file" id="file-camera" accept="image/*" capture="environment" style="display:none" onchange="handleFileSelect(event)">
+    <input type="file" id="file-library" accept="image/*" style="display:none" onchange="handleFileSelect(event)">
+    <div id="upload-area"></div>
     <div id="ocr-section"></div>
   `;
 
@@ -211,7 +212,7 @@ function handleFiles(files) {
       const compressed = canvas.toDataURL('image/jpeg', 0.8);
       uploadedImageBase64 = compressed.split(',')[1];
       uploadedMediaType = 'image/jpeg';
-      document.getElementById('upload-area').innerHTML = `<img src="${compressed}" class="preview-img">`;
+      document.getElementById('upload-area').innerHTML = `<img src="${compressed}" class="preview-img" style="width:100%;border-radius:12px;margin-bottom:8px">`;
       startOCR(uploadedImageBase64, 'image/jpeg');
     };
     img.src = e.target.result;
