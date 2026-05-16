@@ -1,4 +1,11 @@
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+    storage: window.localStorage,
+  }
+});
 
 let currentUser = null;
 let currentPage = 'receipts';
@@ -537,6 +544,7 @@ async function createGroup() {
   const err = document.getElementById('g-error');
   if (!name) { err.textContent = '請輸入群組名稱'; return; }
 
+  await sb.auth.refreshSession();
   const { data: group, error } = await sb.from('groups')
     .insert({ name, created_by: currentUser.id }).select().single();
   if (error) { err.textContent = error.message; return; }
