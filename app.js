@@ -330,15 +330,13 @@ function renderOCRResult(data) {
 }
 
 async function loadGroupsForSelect() {
-  const { data } = await sb.from('group_members')
-    .select('groups(id, name)')
-    .eq('user_id', currentUser.id);
+  const { data } = await sb.rpc('get_my_groups');
   const select = document.getElementById('r-group');
   if (!select || !data) return;
-  data.forEach(m => {
+  data.forEach(g => {
     const opt = document.createElement('option');
-    opt.value = m.groups.id;
-    opt.textContent = `👥 ${m.groups.name}`;
+    opt.value = g.id;
+    opt.textContent = `👥 ${g.name}`;
     select.appendChild(opt);
   });
 }
@@ -482,9 +480,7 @@ async function renderGroups() {
   const content = document.getElementById('page-content');
   content.innerHTML = '<div class="loading"><div class="spinner"></div>載入中...</div>';
 
-  const { data } = await sb.from('group_members')
-    .select('groups(id, name, invite_code, created_by), joined_at')
-    .eq('user_id', currentUser.id);
+  const { data, error } = await sb.rpc('get_my_groups');
 
   if (!data?.length) {
     content.innerHTML = `
@@ -497,8 +493,7 @@ async function renderGroups() {
   }
 
   content.innerHTML = `
-    ${data.map(m => {
-      const g = m.groups;
+    ${data.map(g => {
       const isOwner = g.created_by === currentUser.id;
       return `
       <div class="card">
@@ -544,12 +539,9 @@ async function createGroup() {
   const err = document.getElementById('g-error');
   if (!name) { err.textContent = '請輸入群組名稱'; return; }
 
-  await sb.auth.refreshSession();
-  const { data: group, error } = await sb.from('groups')
-    .insert({ name, created_by: currentUser.id }).select().single();
+  const { data, error } = await sb.rpc('create_group_for_me', { p_name: name });
   if (error) { err.textContent = error.message; return; }
 
-  await sb.from('group_members').insert({ group_id: group.id, user_id: currentUser.id });
   closeModal();
   renderGroups();
 }
@@ -570,17 +562,16 @@ function showJoinGroup() {
 }
 
 async function joinGroup() {
-  const code = document.getElementById('j-code').value.trim().toLowerCase();
+  const code = document.getElementById('j-code').value.trim();
   const err = document.getElementById('j-error');
   if (code.length !== 8) { err.textContent = '請輸入 8 位邀請碼'; return; }
 
-  const { data: group } = await sb.from('groups').select('id').eq('invite_code', code).single();
-  if (!group) { err.textContent = '找不到此邀請碼'; return; }
-
-  const { error } = await sb.from('group_members')
-    .insert({ group_id: group.id, user_id: currentUser.id });
-  if (error?.code === '23505') { err.textContent = '你已在此群組中'; return; }
-  if (error) { err.textContent = error.message; return; }
+  const { data, error } = await sb.rpc('join_group_by_code', { p_code: code });
+  if (error) {
+    if (error.message.includes('找不到此邀請碼')) { err.textContent = '找不到此邀請碼'; return; }
+    err.textContent = error.message;
+    return;
+  }
 
   closeModal();
   renderGroups();
