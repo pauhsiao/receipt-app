@@ -1,5 +1,4 @@
-// Initialize Supabase
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
 let currentPage = 'receipts';
@@ -7,7 +6,7 @@ let uploadedImageBase64 = null;
 let uploadedMediaType = null;
 let ocrResult = null;
 
-// ─── Auth ───────────────────────────────────────────────────────────────────
+// Auth
 
 function switchTab(tab) {
   document.querySelectorAll('.auth-tab').forEach((t, i) => {
@@ -22,7 +21,7 @@ async function login() {
   const password = document.getElementById('login-password').value;
   const errEl = document.getElementById('login-error');
   errEl.textContent = '';
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) errEl.textContent = error.message;
 }
 
@@ -31,16 +30,16 @@ async function register() {
   const password = document.getElementById('reg-password').value;
   const errEl = document.getElementById('reg-error');
   errEl.textContent = '';
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { error } = await sb.auth.signUp({ email, password });
   if (error) errEl.textContent = error.message;
-  else errEl.style.color = 'green', errEl.textContent = '註冊成功！請確認 Email 後登入';
+  else { errEl.style.color = 'green'; errEl.textContent = '註冊成功！請確認 Email 後登入'; }
 }
 
 async function logout() {
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
 }
 
-supabase.auth.onAuthStateChange((event, session) => {
+sb.auth.onAuthStateChange((event, session) => {
   currentUser = session?.user ?? null;
   if (currentUser) {
     document.getElementById('auth-screen').style.display = 'none';
@@ -52,7 +51,7 @@ supabase.auth.onAuthStateChange((event, session) => {
   }
 });
 
-// ─── Navigation ──────────────────────────────────────────────────────────────
+// Navigation
 
 function navigate(page) {
   currentPage = page;
@@ -63,7 +62,7 @@ function navigate(page) {
   pages[page]?.();
 }
 
-// ─── Receipts ────────────────────────────────────────────────────────────────
+// Receipts
 
 async function renderReceipts() {
   document.getElementById('page-title').textContent = '帳單';
@@ -71,7 +70,7 @@ async function renderReceipts() {
   const content = document.getElementById('page-content');
   content.innerHTML = '<div class="loading"><div class="spinner"></div>載入中...</div>';
 
-  const { data: receipts, error } = await supabase
+  const { data: receipts, error } = await sb
     .from('receipts')
     .select('*, receipt_items(*), groups(name)')
     .order('receipt_date', { ascending: false })
@@ -82,12 +81,10 @@ async function renderReceipts() {
     content.innerHTML = '<div class="empty-state"><div class="empty-icon">🧾</div><p>還沒有帳單<br>點下方📸拍照開始記帳</p></div>';
     return;
   }
-
   content.innerHTML = receipts.map(r => receiptCard(r)).join('');
 }
 
 function receiptCard(r) {
-  const isOwn = r.user_id === currentUser.id;
   const groupName = r.groups?.name;
   const splitAmt = r.is_split ? (r.total_amount / 2).toFixed(2) : null;
   return `
@@ -108,7 +105,7 @@ function receiptCard(r) {
 }
 
 async function showReceiptDetail(id) {
-  const { data: r } = await supabase
+  const { data: r } = await sb
     .from('receipts')
     .select('*, receipt_items(*), groups(name)')
     .eq('id', id)
@@ -145,7 +142,8 @@ async function showReceiptDetail(id) {
         <span>${r.currency} ${Number(r.total_amount).toLocaleString()}</span>
       </div>
       ${splitAmt ? `<div class="split-row"><span>÷2 各付</span><span>${r.currency} ${Number(splitAmt).toLocaleString()}</span></div>` : ''}
-    </div>` : `<div class="total-row" style="border-radius:12px;border:1px solid var(--border)">
+    </div>` : `
+    <div class="total-row" style="border-radius:12px;border:1px solid var(--border)">
       <span>合計</span><span>${r.currency} ${Number(r.total_amount).toLocaleString()}</span>
     </div>
     ${splitAmt ? `<div class="split-row" style="border-radius:0 0 12px 12px;border:1px solid #fde68a;border-top:none"><span>÷2 各付</span><span>${r.currency} ${Number(splitAmt).toLocaleString()}</span></div>` : ''}`}
@@ -157,19 +155,19 @@ async function showReceiptDetail(id) {
 }
 
 async function getImageUrl(path) {
-  const { data } = await supabase.storage.from('receipts').createSignedUrl(path, 3600);
+  const { data } = await sb.storage.from('receipts').createSignedUrl(path, 3600);
   return data?.signedUrl || '';
 }
 
 async function deleteReceipt(id) {
   if (!confirm('確定要刪除這筆帳單嗎？')) return;
-  await supabase.from('receipt_items').delete().eq('receipt_id', id);
-  await supabase.from('receipts').delete().eq('id', id);
+  await sb.from('receipt_items').delete().eq('receipt_id', id);
+  await sb.from('receipts').delete().eq('id', id);
   closeModal();
   renderReceipts();
 }
 
-// ─── Upload ──────────────────────────────────────────────────────────────────
+// Upload
 
 function renderUpload() {
   document.getElementById('page-title').textContent = '拍照記帳';
@@ -213,9 +211,11 @@ async function startOCR(base64, mediaType) {
   section.innerHTML = '<div class="loading"><div class="spinner"></div>AI 識別帳單中...</div>';
 
   try {
+    const session = await sb.auth.getSession();
+    const token = session.data.session?.access_token || SUPABASE_ANON_KEY;
     const res = await fetch(OCR_FUNCTION_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ image_base64: base64, media_type: mediaType })
     });
     const data = await res.json();
@@ -261,7 +261,7 @@ function renderOCRResult(data) {
       <div class="section-title">品項明細</div>
       <div class="items-list" id="items-container">
         ${items.map((it, i) => `
-          <div class="item-row" id="item-${i}">
+          <div class="item-row">
             <input type="text" value="${it.name}" style="flex:1;border:none;background:none;font-size:14px;padding:0" onchange="ocrResult.items[${i}].name=this.value">
             <input type="number" value="${it.amount}" style="width:90px;border:none;background:none;text-align:right;font-size:14px;font-weight:500;padding:0" step="0.01" onchange="ocrResult.items[${i}].amount=parseFloat(this.value)">
           </div>`).join('')}
@@ -309,7 +309,7 @@ function renderOCRResult(data) {
 }
 
 async function loadGroupsForSelect() {
-  const { data } = await supabase.from('group_members')
+  const { data } = await sb.from('group_members')
     .select('groups(id, name)')
     .eq('user_id', currentUser.id);
   const select = document.getElementById('r-group');
@@ -340,11 +340,11 @@ async function saveReceipt() {
   if (uploadedImageBase64) {
     const blob = base64ToBlob(uploadedImageBase64, uploadedMediaType);
     const fileName = `${currentUser.id}/${Date.now()}.jpg`;
-    const { error: upErr } = await supabase.storage.from('receipts').upload(fileName, blob);
+    const { error: upErr } = await sb.storage.from('receipts').upload(fileName, blob);
     if (!upErr) imageUrl = fileName;
   }
 
-  const { data: receipt, error } = await supabase.from('receipts').insert({
+  const { data: receipt, error } = await sb.from('receipts').insert({
     user_id: currentUser.id,
     group_id: groupId,
     image_url: imageUrl,
@@ -361,7 +361,7 @@ async function saveReceipt() {
 
   const items = ocrResult?.items || [];
   if (items.length) {
-    await supabase.from('receipt_items').insert(
+    await sb.from('receipt_items').insert(
       items.map(it => ({ receipt_id: receipt.id, name: it.name, amount: it.amount }))
     );
   }
@@ -376,7 +376,7 @@ function base64ToBlob(base64, type) {
   return new Blob([arr], { type });
 }
 
-// ─── Stats ───────────────────────────────────────────────────────────────────
+// Stats
 
 let statsPeriod = 'month';
 
@@ -408,7 +408,7 @@ async function loadStats() {
     from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
   }
 
-  const { data } = await supabase.from('receipts')
+  const { data } = await sb.from('receipts')
     .select('total_amount, currency, is_split, group_id')
     .eq('user_id', currentUser.id)
     .gte('receipt_date', from);
@@ -420,7 +420,6 @@ async function loadStats() {
   const splitCount = data.filter(r => r.is_split).length;
   const personalTotal = data.filter(r => !r.group_id).reduce((s, r) => s + Number(r.total_amount), 0);
   const groupTotal = data.filter(r => r.group_id).reduce((s, r) => s + Number(r.total_amount), 0);
-
   const label = statsPeriod === 'day' ? '今日' : statsPeriod === 'week' ? '本週' : '本月';
 
   document.getElementById('stats-content').innerHTML = `
@@ -450,7 +449,7 @@ async function loadStats() {
   `;
 }
 
-// ─── Groups ──────────────────────────────────────────────────────────────────
+// Groups
 
 async function renderGroups() {
   document.getElementById('page-title').textContent = '群組';
@@ -462,7 +461,7 @@ async function renderGroups() {
   const content = document.getElementById('page-content');
   content.innerHTML = '<div class="loading"><div class="spinner"></div>載入中...</div>';
 
-  const { data } = await supabase.from('group_members')
+  const { data } = await sb.from('group_members')
     .select('groups(id, name, invite_code, created_by), joined_at')
     .eq('user_id', currentUser.id);
 
@@ -489,7 +488,9 @@ async function renderGroups() {
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn btn-outline btn-sm" onclick="copyCode('${g.invite_code}')">複製</button>
-            ${isOwner ? `<button class="btn btn-danger btn-sm" onclick="deleteGroup('${g.id}')">刪除</button>` : `<button class="btn btn-outline btn-sm" onclick="leaveGroup('${g.id}')">離開</button>`}
+            ${isOwner
+              ? `<button class="btn btn-danger btn-sm" onclick="deleteGroup('${g.id}')">刪除</button>`
+              : `<button class="btn btn-outline btn-sm" onclick="leaveGroup('${g.id}')">離開</button>`}
           </div>
         </div>
       </div>`;
@@ -522,11 +523,11 @@ async function createGroup() {
   const err = document.getElementById('g-error');
   if (!name) { err.textContent = '請輸入群組名稱'; return; }
 
-  const { data: group, error } = await supabase.from('groups')
+  const { data: group, error } = await sb.from('groups')
     .insert({ name, created_by: currentUser.id }).select().single();
   if (error) { err.textContent = error.message; return; }
 
-  await supabase.from('group_members').insert({ group_id: group.id, user_id: currentUser.id });
+  await sb.from('group_members').insert({ group_id: group.id, user_id: currentUser.id });
   closeModal();
   renderGroups();
 }
@@ -551,10 +552,10 @@ async function joinGroup() {
   const err = document.getElementById('j-error');
   if (code.length !== 8) { err.textContent = '請輸入 8 位邀請碼'; return; }
 
-  const { data: group } = await supabase.from('groups').select('id').eq('invite_code', code).single();
+  const { data: group } = await sb.from('groups').select('id').eq('invite_code', code).single();
   if (!group) { err.textContent = '找不到此邀請碼'; return; }
 
-  const { error } = await supabase.from('group_members')
+  const { error } = await sb.from('group_members')
     .insert({ group_id: group.id, user_id: currentUser.id });
   if (error?.code === '23505') { err.textContent = '你已在此群組中'; return; }
   if (error) { err.textContent = error.message; return; }
@@ -565,17 +566,17 @@ async function joinGroup() {
 
 async function leaveGroup(groupId) {
   if (!confirm('確定要離開這個群組嗎？')) return;
-  await supabase.from('group_members').delete().eq('group_id', groupId).eq('user_id', currentUser.id);
+  await sb.from('group_members').delete().eq('group_id', groupId).eq('user_id', currentUser.id);
   renderGroups();
 }
 
 async function deleteGroup(groupId) {
   if (!confirm('確定要刪除這個群組嗎？所有群組帳單將變成個人帳單。')) return;
-  await supabase.from('groups').delete().eq('id', groupId);
+  await sb.from('groups').delete().eq('id', groupId);
   renderGroups();
 }
 
-// ─── Modal ───────────────────────────────────────────────────────────────────
+// Modal
 
 function showModal(html) {
   document.getElementById('modal-content').innerHTML = html;
@@ -587,7 +588,6 @@ function closeModal(e) {
   document.getElementById('modal-overlay').style.display = 'none';
 }
 
-// ─── Service Worker ──────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js');
 }
