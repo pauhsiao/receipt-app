@@ -82,8 +82,128 @@ function navigate(page) {
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.page === page);
   });
+  const fab = document.getElementById('fab-add');
+  if (fab) fab.style.display = page === 'receipts' ? 'flex' : 'none';
   const pages = { receipts: renderReceipts, upload: renderUpload, stats: renderStats, groups: renderGroups };
   pages[page]?.();
+}
+
+function showManualEntry() {
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const timeNow = now.toTimeString().slice(0, 5);
+  const currencies = ['TWD','USD','EUR','JPY','KRW','CNY','HKD','GBP','CZK','SGD'];
+
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">✏️ 手動輸入帳單</div>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label>商家名稱</label>
+      <input type="text" id="m-merchant" placeholder="例：全家便利商店">
+    </div>
+    <div style="display:flex;gap:12px">
+      <div class="form-group" style="flex:1">
+        <label>📅 日期</label>
+        <input type="date" id="m-date" value="${today}">
+      </div>
+      <div class="form-group" style="flex:1">
+        <label>🕐 時間</label>
+        <input type="time" id="m-time" value="${timeNow}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>貨幣</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="m-currency-select" style="flex:2;padding:12px 10px;border:2px solid var(--border);border-radius:12px;font-size:15px;background:#FFFEF5;color:var(--text);outline:none" onchange="document.getElementById('m-currency').value=this.value==='OTHER'?'':this.value">
+          ${currencies.map(c => `<option value="${c}"${c==='TWD'?' selected':''}>${c}${c==='TWD'?' 新台幣':c==='USD'?' 美元':c==='EUR'?' 歐元':c==='JPY'?' 日圓':c==='KRW'?' 韓元':c==='CNY'?' 人民幣':c==='HKD'?' 港幣':c==='GBP'?' 英鎊':c==='CZK'?' 捷克克朗':' 新加坡元'}</option>`).join('')}
+          <option value="OTHER">其他...</option>
+        </select>
+        <input type="text" id="m-currency" value="TWD" placeholder="自訂" style="flex:1;min-width:64px">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>總金額</label>
+      <input type="number" id="m-total" placeholder="0" step="0.01" min="0">
+    </div>
+    <div class="toggle-row">
+      <span style="font-weight:500">平分帳單</span>
+      <label class="toggle">
+        <input type="checkbox" id="m-split">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div id="m-split-info" style="display:none;color:#854d0e;font-size:13px;margin-bottom:12px">
+      ÷2 各付 <span id="m-split-amt"></span>
+    </div>
+    <div class="form-group">
+      <label>加入群組（選填）</label>
+      <select id="m-group">
+        <option value="">個人帳單（不加入群組）</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>備註（選填）</label>
+      <textarea id="m-notes" rows="2" placeholder="輸入備註..."></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="saveManualReceipt()">💾 儲存帳單</button>
+    <div id="m-error" class="error"></div>
+  `);
+
+  // Split preview
+  const totalInput = document.getElementById('m-total');
+  const splitInfo = document.getElementById('m-split-info');
+  const splitAmt = document.getElementById('m-split-amt');
+  document.getElementById('m-split').addEventListener('change', e => {
+    splitInfo.style.display = e.target.checked ? 'block' : 'none';
+    const t = parseFloat(totalInput.value) || 0;
+    splitAmt.textContent = `${document.getElementById('m-currency').value} ${(t / 2).toFixed(2)}`;
+  });
+  totalInput.addEventListener('input', () => {
+    const t = parseFloat(totalInput.value) || 0;
+    splitAmt.textContent = `${document.getElementById('m-currency').value} ${(t / 2).toFixed(2)}`;
+  });
+
+  // Load groups
+  sb.rpc('get_my_groups').then(({ data }) => {
+    const sel = document.getElementById('m-group');
+    if (sel && data) data.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id; opt.textContent = `👥 ${g.name}`;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+async function saveManualReceipt() {
+  const errEl = document.getElementById('m-error');
+  const merchant = document.getElementById('m-merchant').value.trim();
+  const date = document.getElementById('m-date').value;
+  const time = document.getElementById('m-time').value;
+  const currency = document.getElementById('m-currency').value.trim() || 'TWD';
+  const total = parseFloat(document.getElementById('m-total').value);
+  const isSplit = document.getElementById('m-split').checked;
+  const groupId = document.getElementById('m-group').value || null;
+  const notes = document.getElementById('m-notes').value.trim();
+
+  if (!date || !total) { errEl.textContent = '請填寫日期和金額'; return; }
+
+  const { error } = await sb.from('receipts').insert({
+    user_id: currentUser.id,
+    group_id: groupId,
+    receipt_date: date,
+    receipt_time: time ? time + ':00' : '00:00:00',
+    merchant_name: merchant || null,
+    total_amount: total,
+    currency,
+    is_split: isSplit,
+    notes: notes || null,
+  });
+
+  if (error) { errEl.textContent = error.message; return; }
+  closeModal();
+  navigate('receipts');
 }
 
 // Receipts
