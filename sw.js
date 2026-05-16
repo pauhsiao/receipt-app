@@ -1,4 +1,4 @@
-const CACHE = 'receipt-v3';
+const CACHE = 'receipt-v4';
 const PRECACHE = ['/', '/index.html', '/app.js', '/config.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -17,10 +17,14 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Supabase API and OCR always hit network — never cache
-  if (url.hostname.includes('supabase.co') || url.pathname.startsWith('/api/')) return;
+  // Only intercept same-origin GET requests (avoids cross-origin CORS issues and POST body problems)
+  if (e.request.method !== 'GET') return;
+  if (url.origin !== self.location.origin) return;
 
-  // Stale-while-revalidate: serve cache instantly, update in background
+  // Don't cache API routes — always hit network
+  if (url.pathname.startsWith('/api/')) return;
+
+  // Stale-while-revalidate: serve from cache instantly, refresh in background
   e.respondWith(
     caches.open(CACHE).then(cache =>
       cache.match(e.request).then(cached => {
