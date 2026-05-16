@@ -792,7 +792,7 @@ async function loadStats() {
   if (!data) return;
 
   const conv = r => convertAmount(Number(r.total_amount), r.currency || 'TWD', statsCurrency, rates);
-  const total = data.reduce((s, r) => s + conv(r), 0);
+  const total = data.reduce((s, r) => s + (r.is_split ? conv(r) / 2 : conv(r)), 0);
   const splitTotal = data.filter(r => r.is_split).reduce((s, r) => s + conv(r) / 2, 0);
   const splitCount = data.filter(r => r.is_split).length;
   const personalTotal = data.filter(r => !r.group_id).reduce((s, r) => s + conv(r), 0);
