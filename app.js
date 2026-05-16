@@ -280,26 +280,112 @@ async function renderReceipts() {
     return;
   }
   content.innerHTML = receipts.map(r => receiptCard(r)).join('');
+  setupSwipeHandlers();
 }
 
 function receiptCard(r) {
   const groupName = r.groups?.name;
   const splitAmt = r.is_split ? (r.total_amount / 2).toFixed(2) : null;
   return `
-  <div class="card" onclick="showReceiptDetail('${r.id}')">
-    <div class="card-header">
-      <div>
-        <div class="card-title">${r.merchant_name || '未知商家'}</div>
-        <div class="card-meta">${r.receipt_date} ${r.receipt_time?.slice(0,5) || ''}</div>
+  <div class="swipe-wrapper" id="wrap-${r.id}">
+    <div class="swipe-delete-bg" onclick="swipeDelete('${r.id}')">🗑 刪除</div>
+    <div class="swipe-card" data-id="${r.id}">
+      <div class="card-header">
+        <div>
+          <div class="card-title">${r.merchant_name || '未知商家'}</div>
+          <div class="card-meta">${r.receipt_date} ${r.receipt_time?.slice(0,5) || ''}</div>
+        </div>
+        <div style="text-align:right">
+          ${r.is_split ? '<span class="badge badge-split">平分</span>' : ''}
+          ${groupName ? `<span class="badge badge-group">👥 ${groupName}</span>` : '<span class="badge badge-personal">個人</span>'}
+        </div>
       </div>
-      <div style="text-align:right">
-        ${r.is_split ? '<span class="badge badge-split">平分</span>' : ''}
-        ${groupName ? `<span class="badge badge-group">👥 ${groupName}</span>` : '<span class="badge badge-personal">個人</span>'}
-      </div>
+      <div class="amount">${r.currency} ${Number(r.total_amount).toLocaleString()}</div>
+      ${splitAmt ? `<div class="amount-small">平分各付 ${r.currency} ${Number(splitAmt).toLocaleString()}</div>` : ''}
     </div>
-    <div class="amount">${r.currency} ${Number(r.total_amount).toLocaleString()}</div>
-    ${splitAmt ? `<div class="amount-small">平分各付 ${r.currency} ${Number(splitAmt).toLocaleString()}</div>` : ''}
   </div>`;
+}
+
+let _swipeState = null;
+
+function setupSwipeHandlers() {
+  document.querySelectorAll('.swipe-card').forEach(card => {
+    card.addEventListener('touchstart', _onSwipeStart, { passive: true });
+    card.addEventListener('touchmove', _onSwipeMove, { passive: false });
+    card.addEventListener('touchend', _onSwipeEnd, { passive: true });
+  });
+}
+
+function _onSwipeStart(e) {
+  _swipeState = {
+    card: this,
+    startX: e.touches[0].clientX,
+    startY: e.touches[0].clientY,
+    moved: false,
+    locked: false,
+    isOpen: this.classList.contains('open'),
+  };
+}
+
+function _onSwipeMove(e) {
+  if (!_swipeState || _swipeState.card !== this || _swipeState.locked) return;
+  const dx = e.touches[0].clientX - _swipeState.startX;
+  const dy = e.touches[0].clientY - _swipeState.startY;
+  if (!_swipeState.moved) {
+    if (Math.abs(dy) > Math.abs(dx)) { _swipeState.locked = true; return; }
+    if (Math.abs(dx) < 5) return;
+    _swipeState.moved = true;
+  }
+  e.preventDefault();
+  const base = _swipeState.isOpen ? -82 : 0;
+  const clamped = Math.max(-82, Math.min(0, base + dx));
+  this.style.transition = 'none';
+  this.style.transform = `translateX(${clamped}px)`;
+}
+
+function _onSwipeEnd(e) {
+  if (!_swipeState || _swipeState.card !== this) return;
+  const dx = e.changedTouches[0].clientX - _swipeState.startX;
+  const { card, moved, isOpen } = _swipeState;
+  _swipeState = null;
+  card.style.transition = '';
+
+  if (!moved) {
+    if (isOpen) {
+      _closeSwipe(card);
+    } else {
+      showReceiptDetail(card.dataset.id);
+    }
+    return;
+  }
+
+  const offset = (isOpen ? -82 : 0) + dx;
+  if (offset < -41) {
+    _openSwipe(card);
+  } else {
+    _closeSwipe(card);
+  }
+}
+
+function _openSwipe(card) {
+  document.querySelectorAll('.swipe-card.open').forEach(c => { if (c !== card) _closeSwipe(c); });
+  card.style.transform = '';
+  card.classList.add('open');
+}
+
+function _closeSwipe(card) {
+  card.style.transform = '';
+  card.classList.remove('open');
+}
+
+async function swipeDelete(id) {
+  if (!confirm('確定要刪除這筆帳單嗎？')) return;
+  await sb.from('receipt_items').delete().eq('receipt_id', id);
+  const { error } = await sb.from('receipts').delete().eq('id', id);
+  if (!error) {
+    const wrapper = document.getElementById(`wrap-${id}`);
+    if (wrapper) wrapper.remove();
+  }
 }
 
 async function showReceiptDetail(id) {
