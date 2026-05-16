@@ -297,15 +297,28 @@ function renderOCRResult(data) {
           <input type="time" id="r-time" value="${toTimeInput(data.time)}">
         </div>
       </div>
-      <div style="display:flex;gap:12px">
-        <div class="form-group" style="flex:1">
-          <label>貨幣</label>
-          <input type="text" id="r-currency" value="${data.currency || 'TWD'}">
+      <div class="form-group">
+        <label>貨幣</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="r-currency-select" style="flex:2;padding:12px 10px;border:2px solid var(--border);border-radius:12px;font-size:15px;background:#FFFEF5;color:var(--text);outline:none" onchange="document.getElementById('r-currency').value=this.value==='OTHER'?'':this.value">
+            <option value="TWD">TWD 新台幣</option>
+            <option value="USD">USD 美元</option>
+            <option value="EUR">EUR 歐元</option>
+            <option value="JPY">JPY 日圓</option>
+            <option value="KRW">KRW 韓元</option>
+            <option value="CNY">CNY 人民幣</option>
+            <option value="HKD">HKD 港幣</option>
+            <option value="GBP">GBP 英鎊</option>
+            <option value="CZK">CZK 捷克克朗</option>
+            <option value="SGD">SGD 新加坡元</option>
+            <option value="OTHER">其他...</option>
+          </select>
+          <input type="text" id="r-currency" placeholder="自訂" style="flex:1;min-width:64px" value="${data.currency || 'TWD'}">
         </div>
-        <div class="form-group" style="flex:1">
-          <label>總金額</label>
-          <input type="number" id="r-total" value="${data.total || 0}" step="0.01">
-        </div>
+      </div>
+      <div class="form-group">
+        <label>總金額</label>
+        <input type="number" id="r-total" value="${data.total || 0}" step="0.01">
       </div>
       ${items.length ? `
       <div class="section-title">品項明細</div>
@@ -340,6 +353,12 @@ function renderOCRResult(data) {
     <button class="btn btn-primary" onclick="saveReceipt()">💾 儲存帳單</button>
     <div id="save-error" class="error"></div>
   `;
+
+  // Sync currency select with OCR-detected value
+  const knownCurrencies = ['TWD','USD','EUR','JPY','KRW','CNY','HKD','GBP','CZK','SGD'];
+  const detectedCurrency = (data.currency || 'TWD').toUpperCase();
+  const currencySelect = document.getElementById('r-currency-select');
+  currencySelect.value = knownCurrencies.includes(detectedCurrency) ? detectedCurrency : 'OTHER';
 
   const totalInput = document.getElementById('r-total');
   const splitInfo = document.getElementById('split-info');
