@@ -261,6 +261,22 @@ async function startOCR(base64, mediaType) {
   }
 }
 
+function toDateInput(str) {
+  if (!str) return new Date().toISOString().split('T')[0];
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  if (/^\d{4}\/\d{2}\/\d{2}$/.test(str)) return str.replace(/\//g, '-');
+  const d = new Date(str);
+  if (!isNaN(d)) return d.toISOString().split('T')[0];
+  return new Date().toISOString().split('T')[0];
+}
+
+function toTimeInput(str) {
+  if (!str) return '';
+  const m = str.match(/^(\d{1,2}):(\d{2})/);
+  if (m) return `${m[1].padStart(2,'0')}:${m[2]}`;
+  return '';
+}
+
 function renderOCRResult(data) {
   const section = document.getElementById('ocr-section');
   const items = data.items || [];
@@ -273,12 +289,12 @@ function renderOCRResult(data) {
       </div>
       <div style="display:flex;gap:12px">
         <div class="form-group" style="flex:1">
-          <label>日期</label>
-          <input type="text" id="r-date" value="${data.date || ''}">
+          <label>📅 日期</label>
+          <input type="date" id="r-date" value="${toDateInput(data.date)}">
         </div>
         <div class="form-group" style="flex:1">
-          <label>時間</label>
-          <input type="text" id="r-time" value="${data.time || ''}">
+          <label>🕐 時間</label>
+          <input type="time" id="r-time" value="${toTimeInput(data.time)}">
         </div>
       </div>
       <div style="display:flex;gap:12px">
@@ -381,7 +397,7 @@ async function saveReceipt() {
     group_id: groupId,
     image_url: imageUrl,
     receipt_date: date,
-    receipt_time: time || '00:00:00',
+    receipt_time: time ? (time.length === 5 ? time + ':00' : time) : '00:00:00',
     merchant_name: merchant,
     total_amount: total,
     currency,
