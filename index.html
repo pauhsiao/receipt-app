@@ -299,8 +299,31 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); backgr
   </nav>
 </div>
 
-<!-- Floating Add Button (receipts page only) -->
-<button id="fab-add" onclick="showManualEntry()" style="display:none;position:fixed;bottom:80px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#FFD700,#FFC000);color:#1A1200;font-size:28px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(200,150,0,0.45);z-index:90;align-items:center;justify-content:center;line-height:1">+</button>
+<!-- Hidden global file inputs for FAB -->
+<input type="file" id="fab-camera" accept="image/*" capture="environment" style="display:none" onchange="fabHandleFile(event)">
+<input type="file" id="fab-library" accept="image/*" style="display:none" onchange="fabHandleFile(event)">
+
+<!-- FAB backdrop -->
+<div id="fab-backdrop" onclick="closeFabMenu()" style="display:none;position:fixed;inset:0;z-index:88;background:rgba(26,18,0,0.3);backdrop-filter:blur(1px)"></div>
+
+<!-- FAB menu options -->
+<div id="fab-menu" style="display:none;position:fixed;bottom:148px;right:20px;z-index:89;display:flex;flex-direction:column;gap:10px;align-items:flex-end">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="background:white;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,0.15);color:#1A1200;white-space:nowrap">手動帳單</span>
+    <button onclick="closeFabMenu();showManualEntry()" style="width:46px;height:46px;border-radius:50%;background:white;border:2px solid var(--border);font-size:20px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center">✏️</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="background:white;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,0.15);color:#1A1200;white-space:nowrap">帳單上傳</span>
+    <button onclick="closeFabMenu();document.getElementById('fab-library').click()" style="width:46px;height:46px;border-radius:50%;background:white;border:2px solid var(--border);font-size:20px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center">🖼️</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="background:white;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,0.15);color:#1A1200;white-space:nowrap">帳單拍照</span>
+    <button onclick="closeFabMenu();document.getElementById('fab-camera').click()" style="width:46px;height:46px;border-radius:50%;background:var(--primary);border:none;font-size:20px;cursor:pointer;box-shadow:0 2px 10px rgba(200,150,0,0.3);display:flex;align-items:center;justify-content:center">📷</button>
+  </div>
+</div>
+
+<!-- FAB main button -->
+<button id="fab-add" onclick="toggleFabMenu()" style="display:none;position:fixed;bottom:80px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#FFD700,#FFC000);color:#1A1200;font-size:28px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(200,150,0,0.45);z-index:90;align-items:center;justify-content:center;line-height:1;transition:transform 0.2s">+</button>
 
 <!-- Modal -->
 <div id="modal-overlay" class="modal-overlay" style="display:none" onclick="closeModal(event)">

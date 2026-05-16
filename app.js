@@ -79,6 +79,7 @@ sb.auth.onAuthStateChange((event, session) => {
 
 function navigate(page) {
   currentPage = page;
+  closeFabMenu();
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.page === page);
   });
@@ -86,6 +87,36 @@ function navigate(page) {
   if (fab) fab.style.display = page === 'receipts' ? 'flex' : 'none';
   const pages = { receipts: renderReceipts, upload: renderUpload, stats: renderStats, groups: renderGroups };
   pages[page]?.();
+}
+
+function toggleFabMenu() {
+  const menu = document.getElementById('fab-menu');
+  const backdrop = document.getElementById('fab-backdrop');
+  const fab = document.getElementById('fab-add');
+  const isOpen = menu.style.display !== 'none' && menu.style.display !== '';
+  if (isOpen) {
+    closeFabMenu();
+  } else {
+    menu.style.display = 'flex';
+    backdrop.style.display = 'block';
+    fab.textContent = '✕';
+    fab.style.transform = 'rotate(45deg)';
+  }
+}
+
+function closeFabMenu() {
+  const menu = document.getElementById('fab-menu');
+  const backdrop = document.getElementById('fab-backdrop');
+  const fab = document.getElementById('fab-add');
+  if (menu) menu.style.display = 'none';
+  if (backdrop) backdrop.style.display = 'none';
+  if (fab) { fab.textContent = '+'; fab.style.transform = ''; }
+}
+
+function fabHandleFile(e) {
+  navigate('upload');
+  setTimeout(() => handleFiles(e.target.files), 50);
+  e.target.value = '';
 }
 
 function showManualEntry() {
