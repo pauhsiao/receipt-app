@@ -306,21 +306,19 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); backgr
   </nav>
 </div>
 
-<!-- Hidden global file inputs for FAB -->
-<input type="file" id="fab-camera" accept="image/*" capture="environment" style="display:none" onchange="fabHandleFile(event)">
-<input type="file" id="fab-library" accept="image/*" style="display:none" onchange="fabHandleFile(event)">
-
 <!-- FAB backdrop -->
 <div id="fab-backdrop" onclick="closeFabMenu()" style="display:none;position:fixed;inset:0;z-index:88;background:rgba(26,18,0,0.3);backdrop-filter:blur(1px)"></div>
 
 <!-- FAB menu options -->
 <div id="fab-menu" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:89;flex-direction:row;gap:20px;align-items:flex-end">
   <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-    <button onclick="closeFabMenu();document.getElementById('fab-camera').click()" style="width:52px;height:52px;border-radius:50%;background:var(--primary);border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 14px rgba(200,150,0,0.45);display:flex;align-items:center;justify-content:center">📷</button>
+    <label for="fab-camera" onclick="closeFabMenu()" style="width:52px;height:52px;border-radius:50%;background:var(--primary);font-size:22px;cursor:pointer;box-shadow:0 4px 14px rgba(200,150,0,0.45);display:flex;align-items:center;justify-content:center">📷</label>
+    <input type="file" id="fab-camera" accept="image/*" capture="environment" style="display:none" onchange="fabHandleFile(event)">
     <span style="font-size:11px;font-weight:700;color:white;background:rgba(26,18,0,0.65);padding:3px 9px;border-radius:10px;white-space:nowrap">拍照</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-    <button onclick="closeFabMenu();document.getElementById('fab-library').click()" style="width:52px;height:52px;border-radius:50%;background:white;border:2px solid var(--border);font-size:22px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center">🖼️</button>
+    <label for="fab-library" onclick="closeFabMenu()" style="width:52px;height:52px;border-radius:50%;background:white;border:2px solid var(--border);font-size:22px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center">🖼️</label>
+    <input type="file" id="fab-library" accept="image/*" style="display:none" onchange="fabHandleFile(event)">
     <span style="font-size:11px;font-weight:700;color:white;background:rgba(26,18,0,0.65);padding:3px 9px;border-radius:10px;white-space:nowrap">上傳</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;gap:6px">

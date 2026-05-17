@@ -112,8 +112,9 @@ function closeFabMenu() {
 }
 
 function fabHandleFile(e) {
+  const files = e.target.files;
   navigate('upload');
-  setTimeout(() => handleFiles(e.target.files), 50);
+  setTimeout(() => handleFiles(files), 50);
   e.target.value = '';
 }
 
