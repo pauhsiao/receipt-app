@@ -12,6 +12,7 @@ let currentPage = 'receipts';
 let uploadedImageBase64 = null;
 let uploadedMediaType = null;
 let ocrResult = null;
+let _pendingFiles = null;
 
 // Auth
 
@@ -112,10 +113,9 @@ function closeFabMenu() {
 }
 
 function fabHandleFile(e) {
-  const files = e.target.files;
-  navigate('upload');
-  setTimeout(() => handleFiles(files), 50);
+  _pendingFiles = e.target.files;
   e.target.value = '';
+  navigate('upload');
 }
 
 function showManualEntry() {
@@ -480,6 +480,12 @@ function renderUpload() {
   ua.addEventListener('dragover', e => { e.preventDefault(); ua.classList.add('dragover'); });
   ua.addEventListener('dragleave', () => ua.classList.remove('dragover'));
   ua.addEventListener('drop', e => { e.preventDefault(); ua.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
+
+  if (_pendingFiles) {
+    const files = _pendingFiles;
+    _pendingFiles = null;
+    handleFiles(files);
+  }
 }
 
 function handleFileSelect(e) { handleFiles(e.target.files); }
