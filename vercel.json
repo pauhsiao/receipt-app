@@ -1,5 +1,10 @@
 {
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/stock-morning", "schedule": "43 0 * * 1-5" },
+    { "path": "/api/stock-midday",  "schedule": "2 4 * * 1-5"  },
+    { "path": "/api/stock-closing", "schedule": "33 6 * * 1-5" }
   ]
 }
