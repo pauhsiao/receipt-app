@@ -254,7 +254,7 @@ async function saveManualReceipt() {
 
 // Receipts
 
-const PIKA_IMG = '<img style="width:28px;height:28px;object-fit:contain;vertical-align:middle" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="" onerror="this.style.display=\'none\'">';
+const PIKA_IMG = '<img style="width:28px;height:28px;object-fit:contain;vertical-align:middle" src="/icons/pikachu.png" alt="">';
 
 async function renderReceipts() {
   document.getElementById('page-title').innerHTML = `${PIKA_IMG} 帳單`;
@@ -266,7 +266,8 @@ async function renderReceipts() {
     .from('receipts')
     .select('*, receipt_items(*), groups(name)')
     .order('receipt_date', { ascending: false })
-    .order('receipt_time', { ascending: false });
+    .order('receipt_time', { ascending: false })
+    .limit(50);
 
   if (error) { content.innerHTML = `<div class="error">${error.message}</div>`; return; }
   if (!receipts.length) {
