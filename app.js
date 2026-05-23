@@ -270,7 +270,7 @@ async function renderReceipts() {
     .select('*, receipt_items(*), groups(name)')
     .order('receipt_date', { ascending: false })
     .order('receipt_time', { ascending: false })
-    .limit(50);
+    .limit(300);
 
   if (error) { content.innerHTML = `<div class="error">${error.message}</div>`; return; }
   if (!receipts.length) {
@@ -288,8 +288,58 @@ async function renderReceipts() {
       </div>`;
     return;
   }
-  content.innerHTML = receipts.map(r => receiptCard(r)).join('');
+
+  // 依月份分組
+  const groups = {};
+  for (const r of receipts) {
+    const key = r.receipt_date.slice(0, 7);
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(r);
+  }
+
+  content.innerHTML = Object.keys(groups).sort((a, b) => b.localeCompare(a)).map(key => {
+    const [y, m] = key.split('-');
+    const label = `${y}年${parseInt(m)}月`;
+    const list = groups[key];
+    return `
+      <div class="month-section" id="month-${key}">
+        <div class="month-header" onclick="toggleMonth('${key}')">
+          <span class="month-title">${label} <span class="month-count">（${list.length} 筆）</span></span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-danger btn-sm" style="padding:5px 12px;font-size:12px;width:auto"
+              onclick="event.stopPropagation();deleteMonth('${key}','${label}')">🗑 整月刪除</button>
+            <span class="month-toggle" id="toggle-${key}">▼</span>
+          </div>
+        </div>
+        <div class="month-cards" id="cards-${key}">
+          ${list.map(r => receiptCard(r)).join('')}
+        </div>
+      </div>`;
+  }).join('');
+
   setupSwipeHandlers();
+}
+
+function toggleMonth(key) {
+  const cards = document.getElementById(`cards-${key}`);
+  const toggle = document.getElementById(`toggle-${key}`);
+  const collapsed = cards.style.display === 'none';
+  cards.style.display = collapsed ? '' : 'none';
+  toggle.textContent = collapsed ? '▼' : '▶';
+}
+
+async function deleteMonth(key, label) {
+  if (!confirm(`確定要刪除「${label}」的所有帳單嗎？\n此操作無法復原。`)) return;
+  const [y, m] = key.split('-');
+  const start = `${key}-01`;
+  const end = `${key}-${new Date(parseInt(y), parseInt(m), 0).getDate()}`;
+  const { data: ids } = await sb.from('receipts').select('id')
+    .eq('user_id', currentUser.id).gte('receipt_date', start).lte('receipt_date', end);
+  if (!ids?.length) return;
+  const idList = ids.map(r => r.id);
+  await sb.from('receipt_items').delete().in('receipt_id', idList);
+  await sb.from('receipts').delete().in('id', idList);
+  document.getElementById(`month-${key}`)?.remove();
 }
 
 function receiptCard(r) {

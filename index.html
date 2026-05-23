@@ -203,6 +203,21 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); backgr
 .detail-field { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
 .detail-field span { color: var(--text); font-weight: 600; }
 
+/* Month sections */
+.month-section { margin-bottom: 8px; }
+.month-header {
+  display: flex; justify-content: space-between; align-items: center;
+  background: linear-gradient(135deg, #FFD700 0%, #FFC000 100%);
+  padding: 10px 14px; border-radius: 16px; cursor: pointer;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 8px rgba(200,150,0,0.25);
+  user-select: none;
+}
+.month-title { font-weight: 800; font-size: 15px; color: #1A1200; }
+.month-count { font-weight: 500; font-size: 13px; }
+.month-toggle { font-size: 13px; color: #7A5800; font-weight: 700; min-width: 16px; text-align: center; }
+.month-cards { }
+
 /* Swipe to delete */
 .swipe-wrapper { position: relative; overflow: hidden; border-radius: 20px; margin-bottom: 12px; }
 .swipe-delete-bg { position: absolute; right: 0; top: 0; bottom: 0; width: 82px; background: #ef4444; color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; cursor: pointer; border-radius: 0 20px 20px 0; gap: 4px; }
