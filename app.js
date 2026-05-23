@@ -113,6 +113,7 @@ function closeFabMenu() {
 }
 
 function fabHandleFile(e) {
+  closeFabMenu();
   _pendingFiles = e.target.files;
   e.target.value = '';
   navigate('upload');
@@ -468,8 +469,8 @@ function renderUpload() {
   ocrResult = null;
   document.getElementById('page-content').innerHTML = `
     <div style="display:flex;gap:12px;margin-bottom:16px">
-      <button class="btn btn-primary" style="flex:1" onclick="document.getElementById('file-camera').click()">📷 拍照</button>
-      <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('file-library').click()">🖼️ 相簿</button>
+      <label for="file-camera" class="btn btn-primary" style="flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer">📷 拍照</label>
+      <label for="file-library" class="btn btn-outline" style="flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer">🖼️ 相簿</label>
     </div>
     <input type="file" id="file-camera" accept="image/*" capture="environment" style="display:none" onchange="handleFileSelect(event)">
     <input type="file" id="file-library" accept="image/*" style="display:none" onchange="handleFileSelect(event)">
