@@ -1,4 +1,4 @@
-const CACHE = 'receipt-v8';
+const CACHE = 'receipt-v9';
 const PRECACHE = [
   '/',
   '/index.html',

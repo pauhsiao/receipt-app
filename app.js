@@ -113,9 +113,11 @@ function closeFabMenu() {
 }
 
 function fabHandleFile(e) {
-  closeFabMenu();
-  _pendingFiles = Array.from(e.target.files);
+  const file = e.target.files[0];
   e.target.value = '';
+  closeFabMenu();
+  if (!file) return;
+  _pendingFiles = [file];
   navigate('upload');
 }
 
@@ -491,17 +493,21 @@ function renderUpload() {
 }
 
 function handleFileSelect(e) {
-  const files = Array.from(e.target.files);
+  const file = e.target.files[0];
   e.target.value = '';
-  handleFiles(files);
+  if (file) handleFiles([file]);
 }
 
 function handleFiles(files) {
   const file = files[0];
   if (!file) return;
+  const ua = document.getElementById('upload-area');
+  if (ua) ua.innerHTML = '<div class="loading"><div class="spinner"></div>載入圖片中...</div>';
   const reader = new FileReader();
+  reader.onerror = () => { if (ua) ua.innerHTML = '<div class="error">讀取圖片失敗，請重試</div>'; };
   reader.onload = e => {
     const img = new Image();
+    img.onerror = () => { if (ua) ua.innerHTML = '<div class="error">圖片格式不支援，請重試</div>'; };
     img.onload = () => {
       const MAX = 1280;
       let w = img.width, h = img.height;
@@ -515,7 +521,7 @@ function handleFiles(files) {
       const compressed = canvas.toDataURL('image/jpeg', 0.8);
       uploadedImageBase64 = compressed.split(',')[1];
       uploadedMediaType = 'image/jpeg';
-      document.getElementById('upload-area').innerHTML = `<img src="${compressed}" class="preview-img" style="width:100%;border-radius:12px;margin-bottom:8px">`;
+      if (ua) ua.innerHTML = `<img src="${compressed}" class="preview-img" style="width:100%;border-radius:12px;margin-bottom:8px">`;
       startOCR(uploadedImageBase64, 'image/jpeg');
     };
     img.src = e.target.result;
