@@ -114,7 +114,7 @@ function closeFabMenu() {
 
 function fabHandleFile(e) {
   closeFabMenu();
-  _pendingFiles = e.target.files;
+  _pendingFiles = Array.from(e.target.files);
   e.target.value = '';
   navigate('upload');
 }
@@ -490,7 +490,11 @@ function renderUpload() {
   }
 }
 
-function handleFileSelect(e) { handleFiles(e.target.files); }
+function handleFileSelect(e) {
+  const files = Array.from(e.target.files);
+  e.target.value = '';
+  handleFiles(files);
+}
 
 function handleFiles(files) {
   const file = files[0];
