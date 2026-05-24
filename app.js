@@ -123,7 +123,7 @@ function fabHandleFile(e) {
 
 function showManualEntry() {
   const now = new Date();
-  const today = now.toISOString().split('T')[0];
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   const timeNow = now.toTimeString().slice(0, 5);
   const currencies = ['TWD','USD','EUR','JPY','KRW','CNY','HKD','GBP','CZK','SGD'];
 
@@ -601,12 +601,13 @@ async function startOCR(base64, mediaType) {
 }
 
 function toDateInput(str) {
-  if (!str) return new Date().toISOString().split('T')[0];
+  const localToday = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; };
+  if (!str) return localToday();
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
   if (/^\d{4}\/\d{2}\/\d{2}$/.test(str)) return str.replace(/\//g, '-');
   const d = new Date(str);
-  if (!isNaN(d)) return d.toISOString().split('T')[0];
-  return new Date().toISOString().split('T')[0];
+  if (!isNaN(d)) return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return localToday();
 }
 
 function toTimeInput(str) {
@@ -865,10 +866,13 @@ async function loadStats() {
   const rates = await fetchRates();
   const now = new Date();
   let from;
-  if (statsPeriod === 'day') from = now.toISOString().split('T')[0];
+  const localDate = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  if (statsPeriod === 'day') from = localDate(now);
   else if (statsPeriod === 'week') {
-    const d = new Date(now); d.setDate(d.getDate() - d.getDay());
-    from = d.toISOString().split('T')[0];
+    const d = new Date(now);
+    const day = d.getDay();
+    d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); // 週一為起點
+    from = localDate(d);
   } else {
     from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
   }
