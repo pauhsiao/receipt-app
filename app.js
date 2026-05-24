@@ -809,6 +809,8 @@ function base64ToBlob(base64, type) {
 let statsPeriod = 'month';
 let statsCurrency = 'TWD';
 let _ratesCache = null;
+let _statsData = [];
+let _statsRates = null;
 
 async function fetchRates() {
   if (_ratesCache) return _ratesCache;
@@ -878,11 +880,14 @@ async function loadStats() {
   }
 
   const { data } = await sb.from('receipts')
-    .select('total_amount, currency, is_split, split_ways, group_id')
+    .select('id, merchant_name, receipt_date, total_amount, currency, is_split, split_ways, group_id')
     .eq('user_id', currentUser.id)
-    .gte('receipt_date', from);
+    .gte('receipt_date', from)
+    .order('receipt_date', { ascending: false });
 
   if (!data) return;
+  _statsData = data;
+  _statsRates = rates;
 
   const conv = r => convertAmount(Number(r.total_amount), r.currency || 'TWD', statsCurrency, rates);
   const ways = r => r.split_ways || 2;
@@ -897,30 +902,64 @@ async function loadStats() {
 
   document.getElementById('stats-content').innerHTML = `
     <div class="stats-grid">
-      <div class="stat-card">
+      <div class="stat-card" onclick="showStatsDetail('all')" style="cursor:pointer">
         <div class="stat-label">${label}總花費</div>
         <div class="stat-value">${sym} ${fmtCurrency(total, sym)}</div>
-        <div class="stat-sub">${data.length} 筆帳單</div>
+        <div class="stat-sub">${data.length} 筆帳單 ›</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" onclick="showStatsDetail('split')" style="cursor:pointer">
         <div class="stat-label">平分合計（你付）</div>
         <div class="stat-value">${sym} ${fmtCurrency(splitTotal, sym)}</div>
-        <div class="stat-sub">共 ${splitCount} 筆 ÷2</div>
+        <div class="stat-sub">共 ${splitCount} 筆 ÷2 ›</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" onclick="showStatsDetail('personal')" style="cursor:pointer">
         <div class="stat-label">個人帳單</div>
         <div class="stat-value">${sym} ${fmtCurrency(personalTotal, sym)}</div>
-        <div class="stat-sub">不含群組</div>
+        <div class="stat-sub">不含群組 ›</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" onclick="showStatsDetail('group')" style="cursor:pointer">
         <div class="stat-label">群組帳單</div>
         <div class="stat-value">${sym} ${fmtCurrency(groupTotal, sym)}</div>
-        <div class="stat-sub">群組消費</div>
+        <div class="stat-sub">群組消費 ›</div>
       </div>
     </div>
     <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:4px">⚡ 匯率來源：open.er-api.com（即時）</div>
     ${data.length === 0 ? '<div class="empty-state"><div class="empty-icon">📊</div><p>此時段尚無記錄</p></div>' : ''}
   `;
+}
+
+function showStatsDetail(filter) {
+  const sym = statsCurrency;
+  const conv = r => convertAmount(Number(r.total_amount), r.currency || 'TWD', sym, _statsRates);
+  const ways = r => r.split_ways || 2;
+  const myShare = r => r.is_split ? conv(r) / ways(r) : conv(r);
+
+  let list = _statsData;
+  let title;
+  if (filter === 'split')    { list = _statsData.filter(r => r.is_split);   title = '平分帳單明細'; }
+  else if (filter === 'personal') { list = _statsData.filter(r => !r.group_id); title = '個人帳單明細'; }
+  else if (filter === 'group')    { list = _statsData.filter(r => r.group_id);  title = '群組帳單明細'; }
+  else title = '全部帳單明細';
+
+  const rows = list.map(r => `
+    <div onclick="showReceiptDetail('${r.id}')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer">
+      <div>
+        <div style="font-weight:600;font-size:14px">${r.merchant_name || '未知商家'}</div>
+        <div style="font-size:12px;color:var(--muted)">${r.receipt_date}${r.is_split ? '　平分' : ''}</div>
+      </div>
+      <div style="font-weight:700;font-size:15px;color:var(--primary)">${sym} ${fmtCurrency(myShare(r), sym)}</div>
+    </div>
+  `).join('');
+
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">${title}</div>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div style="max-height:60vh;overflow-y:auto;padding:0 2px">
+      ${list.length ? rows : '<div class="empty-state"><p>此分類無記錄</p></div>'}
+    </div>
+  `);
 }
 
 // Groups
